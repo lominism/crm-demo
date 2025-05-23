@@ -1,97 +1,183 @@
 "use client";
+import type { Metadata } from "next";
+import LeadsTable from "@/components/leads/leads-table";
+import { useState, useEffect } from "react";
+import { AddNewLeadModal } from "@/components/leads/add-new-lead-modal";
+import { AddNewCollectionModal } from "@/components/leads/add-new-collection-modal";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  deleteDoc,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton"; // Import ShadCN's Skeleton component
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { useEffect, useState } from "react";
-import { auth } from "@/lib/firebase"; // Import your Firebase auth instance
+export default function LeadsPage() {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddCollectionModalOpen, setIsAddCollectionModalOpen] =
+    useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [groups, setGroups] = useState<string[]>([]); // State to store unique group values
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null); // State for selected group
+  const [loading, setLoading] = useState(false); // State to track loading
 
-export default function HomePage() {
-  const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Check if the user is logged in
+  // Fetch unique group values from Firestore
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setIsLoggedIn(!!user); // Set to true if a user is logged in
-    });
-    return () => unsubscribe();
-  }, []);
+    const fetchGroups = async () => {
+      setLoading(true); // Start loading
+      try {
+        const leadsCollection = collection(db, "leads");
+        const snapshot = await getDocs(leadsCollection);
 
-  const handleRedirect = (path: string) => {
-    if (isLoggedIn) {
-      router.push("/leads"); // Redirect to leads if logged in
-    } else {
-      router.push(path); // Otherwise, navigate to the specified path
+        // Extract unique group values
+        const uniqueGroups = Array.from(
+          new Set(snapshot.docs.map((doc) => doc.data().group).filter(Boolean)) // Filter out undefined/null
+        ) as string[];
+
+        setGroups(uniqueGroups);
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+      } finally {
+        setLoading(false); // Stop loading
+      }
+    };
+
+    fetchGroups();
+  }, [refreshKey]); // Refetch groups when refreshKey changes
+
+  const openAddModal = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
+
+  const openAddCollectionModal = () => {
+    setIsAddCollectionModalOpen(true);
+  };
+
+  const closeAddCollectionModal = () => {
+    setIsAddCollectionModalOpen(false);
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
+
+  const handleCollectionAdded = (newCollectionName: string) => {
+    setSelectedGroup(newCollectionName); // Set the new collection as the selected group
+  };
+
+  // Function to delete all leads in the selected group
+  const deleteGroup = async () => {
+    if (!selectedGroup) {
+      alert("Please select a group to delete.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete all leads in the "${selectedGroup}" group? This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true); // Start loading
+      const leadsCollection = collection(db, "leads");
+      const q = query(leadsCollection, where("group", "==", selectedGroup));
+      const snapshot = await getDocs(q);
+
+      // Delete each document in the group
+      const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      console.log(
+        `All leads in the "${selectedGroup}" group have been deleted.`
+      );
+      setRefreshKey((prevKey) => prevKey + 1); // Refresh the UI
+      setSelectedGroup(null); // Reset the selected group
+    } catch (error) {
+      console.error("Error deleting group:", error);
+      alert("Failed to delete the group. Please try again.");
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
 
   return (
-    <>
-      {/* Navbar */}
-      <nav className="h-16 w-full sticky top-0 bg-white border-b shadow-sm px-6 py-4 flex items-center justify-between z-50">
-        <div>
-          <div>
-            <img
-              src="/images/lomnotes-logo.svg"
-              alt="LomNotes Logo"
-              className="h-10 w-auto"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/about"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+    <div key={refreshKey} className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
+        <div className="flex space-x-4">
+          {/* Delete Group Button */}
+          <button
+            className="bg-destructive text-white hover:bg-red-600 rounded-md px-4 py-2 text-sm font-medium disabled:bg-destructive/50 disabled:cursor-not-allowed"
+            onClick={deleteGroup}
+            disabled={!selectedGroup || loading} // Disable if no group is selected
           >
-            About
-          </Link>
-          <Link
-            href="/contact"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            Delete Group
+          </button>
+          {/* Group Select Dropdown */}
+          <Select value={selectedGroup || ""} onValueChange={setSelectedGroup}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Groups" />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((group) => (
+                <SelectItem key={group} value={group}>
+                  {group}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Add Collection Button */}
+          <button
+            className="bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-md px-4 py-2 text-sm font-medium"
+            onClick={openAddCollectionModal}
           >
-            Contact
-          </Link>
-          <Separator
-            orientation="vertical"
-            className="mx-2 w-px bg-gray-300 !h-6"
-          />
-          <Button variant="outline" onClick={() => handleRedirect("/login")}>
-            Log in
-          </Button>
-          <Button onClick={() => handleRedirect("/register")}>Sign up</Button>
+            Add Collection
+          </button>
+
+          {/* Add New Lead Button */}
+          <button
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium"
+            onClick={openAddModal}
+          >
+            Add New Lead
+          </button>
         </div>
-      </nav>
+      </div>
 
-      {/* Main Content */}
-      <main className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-between px-4 py-12 text-center">
-        <section className="max-w-2xl">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            I'm making a notes app. Try it out.
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8">
-            Your ideas, notes, and tasks — all in one clean, minimal app.
-          </p>
-          <Button size="lg" onClick={() => handleRedirect("/register")}>
-            Get Started
-          </Button>
-        </section>
+      {/* Skeleton Loader */}
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      ) : (
+        <LeadsTable selectedGroup={selectedGroup} />
+      )}
 
-        <section className="mt-20 w-full max-w-2xl">
-          <div className="w-full h-[300px] rounded-xl flex items-center justify-center">
-            <img
-              src="/images/app-preview.jpg"
-              alt="App Preview"
-              className="rounded-xl"
-            />
-          </div>
-        </section>
-
-        <footer className="mt-24 text-sm text-muted-foreground">
-          © {new Date().getFullYear()} LomNotes. All rights reserved.
-        </footer>
-      </main>
-    </>
+      <AddNewLeadModal
+        isOpen={isAddModalOpen}
+        onClose={closeAddModal}
+        selectedGroup={selectedGroup}
+      />
+      <AddNewCollectionModal
+        isOpen={isAddCollectionModalOpen}
+        onClose={closeAddCollectionModal}
+        onCollectionAdded={handleCollectionAdded}
+      />
+    </div>
   );
 }

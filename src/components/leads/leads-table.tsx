@@ -72,6 +72,8 @@ export default function LeadsTable({
     const fetchLeads = async () => {
       const leadsCollection = collection(db, "leads");
 
+      console.log("Leads Collection Reference:", leadsCollection);
+
       // Query leads based on the selected group
       const q = selectedGroup
         ? query(leadsCollection, where("group", "==", selectedGroup))

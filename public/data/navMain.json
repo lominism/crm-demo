@@ -5,7 +5,7 @@
       "items": [
         {
           "title": "Leads",
-          "url": "/leads",
+          "url": "/",
           "isActive": true
         },
         {

@@ -3,10 +3,6 @@
 import React from "react";
 import { BadgeCheck, CreditCard, LogOut, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { logout } from "@/lib/auth";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,35 +17,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 
+// Mock user data
+const avatar = "/images/lom.jpg";
+const displayName = "Lom Tastic";
+const email = "lom@example.com";
+
 export function UserInfo() {
-  const router = useRouter();
-  const { isMobile } = useSidebar();
-  const [user, setUser] = React.useState(() => auth.currentUser);
-
-  React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (updatedUser) => {
-      setUser(updatedUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
-  if (!user) return null;
-
-  const displayName = user.displayName || "Unnamed";
-  const email = user.email || "no-email";
-  const avatar = user.photoURL || "/images/avatar-placeholder.png";
+  const isMobile = false;
 
   return (
     <SidebarMenu>
@@ -93,22 +69,17 @@ export function UserInfo() {
 
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              {/* Somehow if you don't use "asChild", icon and word won't be on the same line*/}
               <DropdownMenuItem asChild>
-                <Link href="/settings">
-                  <BadgeCheck className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
+                <BadgeCheck className="mr-2 h-4 w-4" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/billing">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Billing
-                </Link>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Billing
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
