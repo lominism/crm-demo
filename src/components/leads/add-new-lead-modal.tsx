@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createLead } from "@/lib/db";
 import {
   Dialog,
   DialogContent,
@@ -38,63 +37,64 @@ const statusColors: Record<string, string> = {
   "Closed Lost": "bg-red-100 text-red-800",
 };
 
+import { Lead } from "./lead-details-modal";
+
+interface AddNewLeadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onLeadAdded: (lead: Lead) => void;
+  selectedGroup?: string;
+}
+
 export function AddNewLeadModal({
   isOpen,
   onClose,
+  onLeadAdded,
   selectedGroup,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  selectedGroup: string | null;
-}) {
-  const [newLead, setNewLead] = useState({
+}: AddNewLeadModalProps) {
+  const [formData, setFormData] = useState({
     name: "",
-    company: "",
-    project: "",
     email: "",
     phone: "",
+    company: "",
+    project: "",
     status: "New",
-    source: "",
-    temperature: "Hot",
+    temperature: "Warm",
     value: "",
+    source: "Website",
     assignedTo: "",
-    lastContact: new Date().toISOString().split("T")[0],
     notes: "",
-    group: selectedGroup,
+    group: selectedGroup || "",
   });
 
-  const handleInputChange = (field: string, value: string | number) => {
-    setNewLead((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  // Sync the group field with the selectedGroup prop
-  useEffect(() => {
-    setNewLead((prev) => ({
-      ...prev,
-      group: selectedGroup, // Update the group field whenever selectedGroup changes
-    }));
-  }, [selectedGroup]);
+    const newLead: Lead = {
+      id: String(Date.now()),
+      ...formData,
+      value: Number(formData.value) || 0,
+      lastContact: new Date().toISOString(),
+    };
 
-  // This adds a new const "leadWithID" to fix what happened with useEffect
-  // I still don't undersstand how it fixed it
-  const saveNewLead = async () => {
-    try {
-      // Ensure the source field has a default value if empty
-      const leadData = {
-        ...newLead,
-        source: newLead.source.trim() === "" ? "none" : newLead.source, // Default to "none" if empty
-        value: newLead.value === "" ? 0 : Number(newLead.value), // Convert value to number
-      };
+    onLeadAdded(newLead);
+    onClose();
 
-      await createLead(leadData);
-      console.log("New lead added successfully!");
-      onClose(); // Close the modal after saving
-    } catch (error) {
-      console.error("Error adding new lead:", error);
-    }
+    // Reset form
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      company: "",
+      project: "",
+      status: "New",
+      temperature: "Warm",
+      value: "",
+      source: "Website",
+      assignedTo: "",
+      notes: "",
+      group: selectedGroup || "",
+    });
   };
 
   return (
@@ -103,8 +103,8 @@ export function AddNewLeadModal({
         <DialogHeader>
           <DialogTitle className="text-xl flex items-center justify-between">
             <span>Add New Lead</span>
-            <Badge className={statusColors[newLead.status]}>
-              {newLead.status}
+            <Badge className={statusColors[formData.status]}>
+              {formData.status}
             </Badge>
           </DialogTitle>
           <DialogDescription>Enter details for the new lead</DialogDescription>
@@ -125,9 +125,9 @@ export function AddNewLeadModal({
                   </label>
                   <Input
                     id="project"
-                    value={newLead.project}
+                    value={formData.project}
                     onChange={(e) =>
-                      handleInputChange("project", e.target.value)
+                      setFormData({ ...formData, project: e.target.value })
                     }
                     className="w-[500px]"
                   />
@@ -135,7 +135,7 @@ export function AddNewLeadModal({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={saveNewLead}
+                  onClick={handleSubmit}
                   className="flex items-center gap-1"
                 >
                   <Save className="h-4 w-4" />
@@ -151,9 +151,9 @@ export function AddNewLeadModal({
                       </label>
                       <Input
                         id="company"
-                        value={newLead.company}
+                        value={formData.company}
                         onChange={(e) =>
-                          handleInputChange("company", e.target.value)
+                          setFormData({ ...formData, company: e.target.value })
                         }
                       />
                     </div>
@@ -163,9 +163,9 @@ export function AddNewLeadModal({
                       </label>
                       <Input
                         id="name"
-                        value={newLead.name}
+                        value={formData.name}
                         onChange={(e) =>
-                          handleInputChange("name", e.target.value)
+                          setFormData({ ...formData, name: e.target.value })
                         }
                       />
                     </div>
@@ -175,9 +175,9 @@ export function AddNewLeadModal({
                       </label>
                       <Input
                         id="email"
-                        value={newLead.email}
+                        value={formData.email}
                         onChange={(e) =>
-                          handleInputChange("email", e.target.value)
+                          setFormData({ ...formData, email: e.target.value })
                         }
                       />
                     </div>
@@ -187,9 +187,9 @@ export function AddNewLeadModal({
                       </label>
                       <Input
                         id="phone"
-                        value={newLead.phone}
+                        value={formData.phone}
                         onChange={(e) =>
-                          handleInputChange("phone", e.target.value)
+                          setFormData({ ...formData, phone: e.target.value })
                         }
                       />
                     </div>
@@ -200,9 +200,9 @@ export function AddNewLeadModal({
                         Status
                       </label>
                       <Select
-                        value={newLead.status}
+                        value={formData.status}
                         onValueChange={(value) =>
-                          handleInputChange("status", value)
+                          setFormData({ ...formData, status: value })
                         }
                       >
                         <SelectTrigger id="status">
@@ -229,9 +229,9 @@ export function AddNewLeadModal({
                         Temperature
                       </label>
                       <Select
-                        value={newLead.temperature}
+                        value={formData.temperature}
                         onValueChange={(value) =>
-                          handleInputChange("temperature", value)
+                          setFormData({ ...formData, temperature: value })
                         }
                       >
                         <SelectTrigger id="temperature">
@@ -250,9 +250,9 @@ export function AddNewLeadModal({
                       </label>
                       <Input
                         id="source"
-                        value={newLead.source}
+                        value={formData.source}
                         onChange={(e) =>
-                          handleInputChange("source", e.target.value)
+                          setFormData({ ...formData, source: e.target.value })
                         }
                       />
                     </div>
@@ -263,14 +263,12 @@ export function AddNewLeadModal({
                       <Input
                         id="value"
                         type="number"
-                        value={newLead.value}
+                        value={formData.value.toString()}
                         onChange={(e) =>
-                          handleInputChange(
-                            "value",
-                            e.target.value === ""
-                              ? ""
-                              : Number.parseFloat(e.target.value)
-                          )
+                          setFormData({
+                            ...formData,
+                            value: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -283,9 +281,12 @@ export function AddNewLeadModal({
                       </label>
                       <Input
                         id="assignedTo"
-                        value={newLead.assignedTo}
+                        value={formData.assignedTo}
                         onChange={(e) =>
-                          handleInputChange("assignedTo", e.target.value)
+                          setFormData({
+                            ...formData,
+                            assignedTo: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -307,8 +308,10 @@ export function AddNewLeadModal({
               </CardHeader>
               <CardContent>
                 <Textarea
-                  value={newLead.notes}
-                  onChange={(e) => handleInputChange("notes", e.target.value)}
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
                   className="min-h-[200px]"
                   placeholder="Enter notes about this lead..."
                 />

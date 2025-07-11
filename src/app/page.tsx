@@ -1,10 +1,7 @@
 "use client";
-import type { Metadata } from "next";
 import LeadsTable from "@/components/leads/leads-table";
-import { useState, useEffect } from "react";
-import { AddNewLeadModal } from "@/components/leads/add-new-lead-modal";
+import { useState } from "react";
 import { AddNewCollectionModal } from "@/components/leads/add-new-collection-modal";
-import { getGroups, deleteGroup as deleteMongoGroup } from "@/lib/db";
 import {
   Select,
   SelectTrigger,
@@ -22,23 +19,6 @@ export default function LeadsPage() {
   const [groups, setGroups] = useState<string[]>([]); // State to store unique group values
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null); // State for selected group
   const [loading, setLoading] = useState(false); // State to track loading
-
-  // Fetch unique group values from Firestore
-  useEffect(() => {
-    const fetchGroups = async () => {
-      setLoading(true); // Start loading
-      try {
-        const { groups: fetchedGroups } = await getGroups();
-        setGroups(fetchedGroups);
-      } catch (error) {
-        console.error("Error fetching groups:", error);
-      } finally {
-        setLoading(false); // Stop loading
-      }
-    };
-
-    fetchGroups();
-  }, [refreshKey]); // Refetch groups when refreshKey changes
 
   const openAddModal = () => {
     setIsAddModalOpen(true);
@@ -62,35 +42,6 @@ export default function LeadsPage() {
     setSelectedGroup(newCollectionName); // Set the new collection as the selected group
   };
 
-  // Function to delete all leads in the selected group
-  const deleteGroup = async () => {
-    if (!selectedGroup) {
-      alert("Please select a group to delete.");
-      return;
-    }
-
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete all leads in the "${selectedGroup}" group? This action cannot be undone.`
-    );
-
-    if (!confirmDelete) return;
-
-    try {
-      setLoading(true); // Start loading
-      await deleteMongoGroup(selectedGroup);
-      console.log(
-        `All leads in the "${selectedGroup}" group have been deleted.`
-      );
-      setRefreshKey((prevKey) => prevKey + 1); // Refresh the UI
-      setSelectedGroup(null); // Reset the selected group
-    } catch (error) {
-      console.error("Error deleting group:", error);
-      alert("Failed to delete the group. Please try again.");
-    } finally {
-      setLoading(false); // Stop loading
-    }
-  };
-
   return (
     <div key={refreshKey} className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -99,7 +50,10 @@ export default function LeadsPage() {
           {/* Delete Group Button */}
           <button
             className="bg-destructive text-white hover:bg-red-600 rounded-md px-4 py-2 text-sm font-medium disabled:bg-destructive/50 disabled:cursor-not-allowed"
-            onClick={deleteGroup}
+            onClick={() => {
+              // Logic to delete the selected group
+              console.log("Deleting group:", selectedGroup);
+            }}
             disabled={!selectedGroup || loading} // Disable if no group is selected
           >
             Delete Group
@@ -146,12 +100,6 @@ export default function LeadsPage() {
       ) : (
         <LeadsTable selectedGroup={selectedGroup} />
       )}
-
-      <AddNewLeadModal
-        isOpen={isAddModalOpen}
-        onClose={closeAddModal}
-        selectedGroup={selectedGroup}
-      />
       <AddNewCollectionModal
         isOpen={isAddCollectionModalOpen}
         onClose={closeAddCollectionModal}

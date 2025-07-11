@@ -39,8 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateLead } from "@/lib/db";
-import { group } from "console";
 
 // Define the Lead type for better type safety
 export type Lead = {
@@ -51,28 +49,20 @@ export type Lead = {
   email: string;
   phone: string;
   status: string;
-  source: string;
-  temperature: "Hot" | "Warm" | "Cold";
-  value: number;
-  assignedTo: string;
   group: string;
+  temperature: string;
+  value: number;
+  source: string;
+  assignedTo: string;
   lastContact: string;
-  notes?: string;
-  activities?: {
-    id: string;
-    type: string;
-    description: string;
-    date: string;
-  }[];
+  notes: string;
 };
-// (Above) Activities is not being used because I took that feature out
-// but I might bring it back so I left it in the type
 
 interface LeadDetailsModalProps {
   lead: Lead | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdateLead?: (updatedLead: Lead) => void;
+  onUpdateLead?: (lead: Lead) => void;
 }
 
 const statusColors: Record<string, string> = {
@@ -130,7 +120,6 @@ export function LeadDetailsModal({
     if (!lead) return;
 
     try {
-      await updateLead(lead.id, { notes: notesContent }); // Update the notes field in MongoDB
       setIsEditingNotes(false); // Exit editing mode
       console.log("Notes saved successfully!");
     } catch (error) {
@@ -143,21 +132,6 @@ export function LeadDetailsModal({
     if (!editedLead) return;
 
     try {
-      await updateLead(editedLead.id, {
-        name: editedLead.name,
-        company: editedLead.company,
-        project: editedLead.project,
-        email: editedLead.email,
-        phone: editedLead.phone,
-        status: editedLead.status,
-        source: editedLead.source,
-        temperature: editedLead.temperature,
-        value: editedLead.value,
-        assignedTo: editedLead.assignedTo,
-        group: editedLead.group,
-        lastContact: editedLead.lastContact,
-      });
-
       // Call the parent function to update the selected lead
       if (onUpdateLead) {
         onUpdateLead(editedLead);

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getLeads, deleteLead } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -30,13 +29,59 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LeadDetailsModal } from "./lead-details-modal";
+import { Lead } from "./lead-details-modal";
 
-import { Lead as LeadType } from "./lead-details-modal";
-
-// Extend the Lead type from the modal but allow for MongoDB _id
-type Lead = LeadType & {
-  _id?: string;
-};
+// Mock Data
+const mockLeads: Lead[] = [
+  {
+    id: "1",
+    name: "John Doe",
+    email: "john@techcorp.com",
+    phone: "123-456-7890",
+    company: "Tech Corp",
+    project: "Website Redesign",
+    status: "New",
+    temperature: "Hot",
+    assignedTo: "Sarah Manager",
+    value: 50000,
+    lastContact: "2025-07-10",
+    source: "Website",
+    notes: "Interested in complete digital transformation",
+    group: "Sales",
+  },
+  {
+    id: "2",
+    name: "Jane Smith",
+    email: "jane@innovate.co",
+    phone: "098-765-4321",
+    company: "Innovate Co",
+    project: "Mobile App Development",
+    status: "Qualified",
+    temperature: "Warm",
+    assignedTo: "Mike Sales",
+    value: 75000,
+    lastContact: "2025-07-09",
+    source: "Referral",
+    notes: "Looking for iOS and Android development",
+    group: "Marketing",
+  },
+  {
+    id: "3",
+    name: "Bob Wilson",
+    email: "bob@global.com",
+    phone: "555-555-5555",
+    company: "Global Industries",
+    project: "ERP Implementation",
+    status: "Negotiation",
+    temperature: "Hot",
+    assignedTo: "Sarah Manager",
+    value: 150000,
+    lastContact: "2025-07-08",
+    source: "LinkedIn",
+    notes: "Need complete system overhaul",
+    group: "Sales",
+  },
+];
 
 const statusColors: Record<string, string> = {
   New: "bg-blue-100 text-blue-800",
@@ -58,33 +103,13 @@ export default function LeadsTable({
 }: {
   selectedGroup: string | null;
 }) {
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [temperatureFilter, setTemperatureFilter] = useState("all");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Fetch leads from MongoDB
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const { leads: fetchedLeads } = await getLeads(selectedGroup);
-        setLeads(
-          fetchedLeads.map((lead: any) => ({
-            ...lead,
-            id: lead._id.toString(),
-            _id: lead._id.toString(),
-          })) as Lead[]
-        );
-      } catch (error) {
-        console.error("Error fetching leads:", error);
-      }
-    };
-
-    fetchLeads();
-  }, [selectedGroup]); // Refetch leads when selectedGroup changes
+  const [leads, setLeads] = useState<Lead[]>(mockLeads);
 
   // Function to open the modal with a specific lead
   const openLeadDetails = (lead: Lead) => {
@@ -97,18 +122,12 @@ export default function LeadsTable({
     setLeads((prevLeads) =>
       prevLeads.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead))
     );
-    setSelectedLead(updatedLead); // Update the selected lead
+    setSelectedLead(updatedLead);
   };
 
   // Function to delete a lead
-  const handleDeleteLead = async (leadId: string) => {
-    try {
-      await deleteLead(leadId);
-      setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId)); // Update the state
-      console.log(`Lead with ID ${leadId} deleted successfully.`);
-    } catch (error) {
-      console.error("Error deleting lead:", error);
-    }
+  const handleDeleteLead = (leadId: string) => {
+    setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId));
   };
 
   // Filter leads based on search term and filters
@@ -117,7 +136,7 @@ export default function LeadsTable({
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase()); // Added assignedTo so Mon can see who's working on it
+      lead.assignedTo.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" || lead.status === statusFilter;

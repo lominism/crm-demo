@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getGroups, updateGroupName } from "@/lib/db";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -18,46 +17,10 @@ export default function GroupTable() {
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState("");
 
-  // Fetch unique group names from the database
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const { groups: fetchedGroups } = await getGroups();
-        setGroups(fetchedGroups);
-      } catch (error) {
-        console.error("Error fetching groups:", error);
-      }
-    };
-
-    fetchGroups();
-  }, []);
-
   // Function to handle editing a group name
   const handleEditGroup = (group: string) => {
     setEditingGroup(group);
     setNewGroupName(group);
-  };
-
-  // Function to save the updated group name
-  const handleSaveGroup = async (oldGroupName: string) => {
-    try {
-      await updateGroupName(oldGroupName, newGroupName);
-
-      // Update the local state
-      setGroups((prevGroups) =>
-        prevGroups.map((group) =>
-          group === oldGroupName ? newGroupName : group
-        )
-      );
-
-      setEditingGroup(null);
-      setNewGroupName("");
-      console.log(
-        `Group name updated from "${oldGroupName}" to "${newGroupName}"`
-      );
-    } catch (error) {
-      console.error("Error updating group name:", error);
-    }
   };
 
   return (
@@ -85,11 +48,7 @@ export default function GroupTable() {
               </TableCell>
               <TableCell className="text-right">
                 {editingGroup === group ? (
-                  <Button
-                    size="sm"
-                    onClick={() => handleSaveGroup(group)}
-                    className="mr-2"
-                  >
+                  <Button size="sm" className="mr-2">
                     Save
                   </Button>
                 ) : (
