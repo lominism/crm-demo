@@ -2,7 +2,6 @@
 
 import React from "react";
 import { BadgeCheck, CreditCard, LogOut, ChevronsUpDown } from "lucide-react";
-import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
