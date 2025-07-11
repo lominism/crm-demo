@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BadgeCheck, CreditCard, LogOut, ChevronsUpDown } from "lucide-react";
+import { LogOut, ChevronsUpDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -66,18 +66,6 @@ export function UserInfo() {
               </div>
             </DropdownMenuLabel>
 
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <BadgeCheck className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Billing
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
             <DropdownMenuItem>
               <LogOut className="mr-2 h-4 w-4" />
               Log out
