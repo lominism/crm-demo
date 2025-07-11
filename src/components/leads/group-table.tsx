@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  query,
-  updateDoc,
-  where,
-  doc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getGroups, updateGroupName } from "@/lib/db";
 import {
   Table,
   TableBody,
@@ -29,15 +21,12 @@ export default function GroupTable() {
   // Fetch unique group names from the database
   useEffect(() => {
     const fetchGroups = async () => {
-      const leadsCollection = collection(db, "leads");
-      const snapshot = await getDocs(leadsCollection);
-
-      // Extract unique group names
-      const groupNames = Array.from(
-        new Set(snapshot.docs.map((doc) => doc.data().group))
-      ).filter((group) => group); // Filter out undefined or null groups
-
-      setGroups(groupNames as string[]);
+      try {
+        const { groups: fetchedGroups } = await getGroups();
+        setGroups(fetchedGroups);
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+      }
     };
 
     fetchGroups();
@@ -52,15 +41,7 @@ export default function GroupTable() {
   // Function to save the updated group name
   const handleSaveGroup = async (oldGroupName: string) => {
     try {
-      const leadsCollection = collection(db, "leads");
-      const q = query(leadsCollection, where("group", "==", oldGroupName));
-      const snapshot = await getDocs(q);
-
-      // Update all documents with the old group name
-      const updatePromises = snapshot.docs.map((doc) =>
-        updateDoc(doc.ref, { group: newGroupName })
-      );
-      await Promise.all(updatePromises);
+      await updateGroupName(oldGroupName, newGroupName);
 
       // Update the local state
       setGroups((prevGroups) =>

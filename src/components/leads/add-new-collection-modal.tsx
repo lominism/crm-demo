@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { addDoc, collection } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createLead } from "@/lib/db";
 
 export function AddNewCollectionModal({
   isOpen,
@@ -25,15 +24,16 @@ export function AddNewCollectionModal({
 
     try {
       // Add a new document to the "leads" collection with the group field
-      await addDoc(collection(db, "leads"), {
+      await createLead({
         name: "John Doe", // Placeholder lead data
         company: "Default Company",
+        project: "", // Added to match the Lead type
         email: "example@example.com",
         phone: "",
         status: "New",
         temperature: "Hot",
         source: "Manual",
-        value: "",
+        value: 0, // Changed to number to match the Lead type
         lastContact: new Date().toISOString().split("T")[0],
         assignedTo: "",
         group: collectionName, // Add the group field

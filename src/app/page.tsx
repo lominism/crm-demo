@@ -4,14 +4,7 @@ import LeadsTable from "@/components/leads/leads-table";
 import { useState, useEffect } from "react";
 import { AddNewLeadModal } from "@/components/leads/add-new-lead-modal";
 import { AddNewCollectionModal } from "@/components/leads/add-new-collection-modal";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  deleteDoc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getGroups, deleteGroup as deleteMongoGroup } from "@/lib/db";
 import {
   Select,
   SelectTrigger,
@@ -35,15 +28,8 @@ export default function LeadsPage() {
     const fetchGroups = async () => {
       setLoading(true); // Start loading
       try {
-        const leadsCollection = collection(db, "leads");
-        const snapshot = await getDocs(leadsCollection);
-
-        // Extract unique group values
-        const uniqueGroups = Array.from(
-          new Set(snapshot.docs.map((doc) => doc.data().group).filter(Boolean)) // Filter out undefined/null
-        ) as string[];
-
-        setGroups(uniqueGroups);
+        const { groups: fetchedGroups } = await getGroups();
+        setGroups(fetchedGroups);
       } catch (error) {
         console.error("Error fetching groups:", error);
       } finally {
@@ -91,14 +77,7 @@ export default function LeadsPage() {
 
     try {
       setLoading(true); // Start loading
-      const leadsCollection = collection(db, "leads");
-      const q = query(leadsCollection, where("group", "==", selectedGroup));
-      const snapshot = await getDocs(q);
-
-      // Delete each document in the group
-      const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
-      await Promise.all(deletePromises);
-
+      await deleteMongoGroup(selectedGroup);
       console.log(
         `All leads in the "${selectedGroup}" group have been deleted.`
       );

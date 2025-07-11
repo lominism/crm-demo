@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getLeads, deleteLead } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -37,7 +29,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LeadDetailsModal, type Lead } from "./lead-details-modal";
+import { LeadDetailsModal } from "./lead-details-modal";
+
+import { Lead as LeadType } from "./lead-details-modal";
+
+// Extend the Lead type from the modal but allow for MongoDB _id
+type Lead = LeadType & {
+  _id?: string;
+};
 
 const statusColors: Record<string, string> = {
   New: "bg-blue-100 text-blue-800",
@@ -67,24 +66,21 @@ export default function LeadsTable({
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Fetch leads from Firestore
+  // Fetch leads from MongoDB
   useEffect(() => {
     const fetchLeads = async () => {
-      const leadsCollection = collection(db, "leads");
-
-      console.log("Leads Collection Reference:", leadsCollection);
-
-      // Query leads based on the selected group
-      const q = selectedGroup
-        ? query(leadsCollection, where("group", "==", selectedGroup))
-        : leadsCollection; // If no group is selected, fetch all leads
-
-      const snapshot = await getDocs(q);
-      const fetchedLeads = snapshot.docs.map((doc) => ({
-        id: doc.id, // Use Firestore document ID as the lead ID
-        ...doc.data(),
-      })) as Lead[];
-      setLeads(fetchedLeads);
+      try {
+        const { leads: fetchedLeads } = await getLeads(selectedGroup);
+        setLeads(
+          fetchedLeads.map((lead: any) => ({
+            ...lead,
+            id: lead._id.toString(),
+            _id: lead._id.toString(),
+          })) as Lead[]
+        );
+      } catch (error) {
+        console.error("Error fetching leads:", error);
+      }
     };
 
     fetchLeads();
@@ -105,10 +101,9 @@ export default function LeadsTable({
   };
 
   // Function to delete a lead
-  const deleteLead = async (leadId: string) => {
+  const handleDeleteLead = async (leadId: string) => {
     try {
-      const leadDocRef = doc(db, "leads", leadId); // Reference to the document
-      await deleteDoc(leadDocRef); // Delete the document from Firestore
+      await deleteLead(leadId);
       setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId)); // Update the state
       console.log(`Lead with ID ${leadId} deleted successfully.`);
     } catch (error) {
@@ -285,7 +280,7 @@ export default function LeadsTable({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-red-600"
-                          onClick={() => deleteLead(lead.id)} // Call deleteLead
+                          onClick={() => handleDeleteLead(lead.id)} // Call deleteLead
                         >
                           Delete Lead
                         </DropdownMenuItem>

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { createLead } from "@/lib/db";
 import {
   Dialog,
   DialogContent,
@@ -83,16 +82,14 @@ export function AddNewLeadModal({
   // I still don't undersstand how it fixed it
   const saveNewLead = async () => {
     try {
-      const newLeadRef = doc(collection(db, "leads")); // Generate a new document reference
-
       // Ensure the source field has a default value if empty
-      const leadWithId = {
+      const leadData = {
         ...newLead,
-        source: newLead.source.trim() === "" ? "none" : newLead.source, // Default to "none" if empty because of SELECT ISSUE
-        id: newLeadRef.id, // Set the generated document ID as the lead's ID
+        source: newLead.source.trim() === "" ? "none" : newLead.source, // Default to "none" if empty
+        value: newLead.value === "" ? 0 : Number(newLead.value), // Convert value to number
       };
 
-      await setDoc(newLeadRef, leadWithId); // Save the lead with the ID
+      await createLead(leadData);
       console.log("New lead added successfully!");
       onClose(); // Close the modal after saving
     } catch (error) {

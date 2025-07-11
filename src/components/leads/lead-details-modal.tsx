@@ -39,8 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { updateLead } from "@/lib/db";
 import { group } from "console";
 
 // Define the Lead type for better type safety
@@ -131,8 +130,7 @@ export function LeadDetailsModal({
     if (!lead) return;
 
     try {
-      const leadRef = doc(db, "leads", lead.id); // Use the Firestore document ID
-      await updateDoc(leadRef, { notes: notesContent }); // Update the notes field in Firestore
+      await updateLead(lead.id, { notes: notesContent }); // Update the notes field in MongoDB
       setIsEditingNotes(false); // Exit editing mode
       console.log("Notes saved successfully!");
     } catch (error) {
@@ -145,8 +143,7 @@ export function LeadDetailsModal({
     if (!editedLead) return;
 
     try {
-      const leadRef = doc(db, "leads", editedLead.id);
-      await updateDoc(leadRef, {
+      await updateLead(editedLead.id, {
         name: editedLead.name,
         company: editedLead.company,
         project: editedLead.project,
